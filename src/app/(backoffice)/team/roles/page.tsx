@@ -2,94 +2,14 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import {
-  ActivitySquare,
-  ArrowLeft,
-  Headphones,
-  Pencil,
-  Plus,
-  Settings2,
-  ShieldCheck,
-  Trash2,
-  UserCheck,
-} from 'lucide-react';
+import { ArrowLeft, Headphones, Pencil, Plus, Settings2, ShieldCheck, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { useRolesStore } from '@/lib/roles-store';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { BASE_ROLES, type BaseRole, type CustomRole, getParentRoleName } from '@/lib/mock/roles';
-import { cn } from '@/lib/utils';
-
-// ─── Roles activity data ─────────────────────────────────────────────────────
-
-const ROLES_ACTIVITIES = [
-  {
-    id: 'ra-1',
-    type: 'created' as const,
-    description: 'Nadia Khalil created the "Content Manager" custom role',
-    actor: 'Nadia Khalil',
-    time: '1 day ago',
-  },
-  {
-    id: 'ra-2',
-    type: 'edited' as const,
-    description: 'Saad Al-Rashid updated permissions for "Support Agent" role — added billing.view',
-    actor: 'Saad Al-Rashid',
-    time: '2 days ago',
-  },
-  {
-    id: 'ra-3',
-    type: 'assigned' as const,
-    description: 'Nadia Khalil assigned Khalid Al-Otaibi to the "Content Manager" role',
-    actor: 'Nadia Khalil',
-    time: '3 days ago',
-  },
-  {
-    id: 'ra-4',
-    type: 'deleted' as const,
-    description: 'Saad Al-Rashid deleted "Temporary Access" role — 2 members moved to Viewer',
-    actor: 'Saad Al-Rashid',
-    time: '4 days ago',
-  },
-  {
-    id: 'ra-5',
-    type: 'edited' as const,
-    description: 'Nadia Khalil updated permissions for "Admin" role — added team.manage',
-    actor: 'Nadia Khalil',
-    time: '5 days ago',
-  },
-  {
-    id: 'ra-6',
-    type: 'assigned' as const,
-    description: 'Saad Al-Rashid assigned Lina Al-Harbi to the "Editor" role',
-    actor: 'Saad Al-Rashid',
-    time: '6 days ago',
-  },
-  {
-    id: 'ra-7',
-    type: 'created' as const,
-    description: 'Saad Al-Rashid created the "Support Agent" custom role',
-    actor: 'Saad Al-Rashid',
-    time: '7 days ago',
-  },
-  {
-    id: 'ra-8',
-    type: 'edited' as const,
-    description: 'Nadia Khalil updated permissions for "Editor" role — removed settings.manage',
-    actor: 'Nadia Khalil',
-    time: '8 days ago',
-  },
-];
-
-const ROLES_ACTIVITY_ICON_MAP = {
-  created: { Icon: Plus, color: 'text-[#3ECF8E]' },
-  edited: { Icon: Pencil, color: 'text-blue-400' },
-  assigned: { Icon: UserCheck, color: 'text-purple-400' },
-  deleted: { Icon: Trash2, color: 'text-destructive' },
-} as const;
 
 // ─── Icon map ─────────────────────────────────────────────────────────────────
 
@@ -215,7 +135,6 @@ function CustomRoleCard({
 export default function RolesPage() {
   const { customRoles, baseRolePermissions, deleteCustomRole } = useRolesStore();
   const [deleteTarget, setDeleteTarget] = useState<CustomRole | null>(null);
-  const [activityLogOpen, setActivityLogOpen] = useState(false);
 
   const mergedBaseRoles = useMemo(
     () =>
@@ -252,15 +171,6 @@ export default function RolesPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5 text-xs font-medium"
-            onClick={() => setActivityLogOpen(true)}
-          >
-            <ActivitySquare className="h-3.5 w-3.5" />
-            Activity Log
-          </Button>
-          <Button
             className="shrink-0 bg-[#3ECF8E] text-[#0D0D0D] hover:bg-[#3ECF8E]/90 gap-1.5 text-xs font-medium"
             size="sm"
             asChild
@@ -282,36 +192,6 @@ export default function RolesPage() {
           <CustomRoleCard key={role.id} role={role} onDelete={setDeleteTarget} />
         ))}
       </div>
-
-      {/* Activity Log Sheet */}
-      <Sheet open={activityLogOpen} onOpenChange={setActivityLogOpen}>
-        <SheetContent className="w-96 overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Activity Log</SheetTitle>
-          </SheetHeader>
-          <div className="mt-4 space-y-0">
-            {ROLES_ACTIVITIES.map((a) => {
-              const { Icon, color } = ROLES_ACTIVITY_ICON_MAP[a.type];
-              return (
-                <div
-                  key={a.id}
-                  className="flex gap-3 px-1 py-3 border-b border-border/50 last:border-0"
-                >
-                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                    <Icon className={cn('h-4 w-4', color)} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-foreground">{a.description}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {a.actor} · {a.time}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </SheetContent>
-      </Sheet>
 
       {/* Delete confirm */}
       <ConfirmDialog

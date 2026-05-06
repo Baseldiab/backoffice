@@ -5,18 +5,13 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { format, formatDistanceToNow, isValid, parseISO } from 'date-fns';
 import {
-  ActivitySquare,
   CheckCircle2,
   MoreVertical,
   Plus,
   RefreshCw,
   Search,
-  Shield,
   Upload,
-  UserCheck,
-  UserPlus,
   Users,
-  UserX,
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -43,7 +38,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
@@ -57,87 +51,6 @@ import { cn } from '@/lib/utils';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const PAGE_SIZE = 12;
-
-const TEAM_ACTIVITIES = [
-  {
-    id: 'ta-1',
-    type: 'invited' as const,
-    description: 'Nadia Khalil invited Omar Al-Zahrani as Editor',
-    actor: 'Nadia Khalil',
-    time: '2 hours ago',
-  },
-  {
-    id: 'ta-2',
-    type: 'joined' as const,
-    description: 'Lina Al-Harbi accepted the invitation and joined the team',
-    actor: 'Lina Al-Harbi',
-    time: '1 day ago',
-  },
-  {
-    id: 'ta-3',
-    type: 'role_changed' as const,
-    description: 'Saad Al-Rashid changed role of Khalid Al-Otaibi from Viewer to Editor',
-    actor: 'Saad Al-Rashid',
-    time: '2 days ago',
-  },
-  {
-    id: 'ta-4',
-    type: 'suspended' as const,
-    description: 'Abdullah Al-Mutawa was suspended by Nadia Khalil',
-    actor: 'Nadia Khalil',
-    time: '3 days ago',
-  },
-  {
-    id: 'ta-5',
-    type: 'bulk_invite' as const,
-    description: 'Saad Al-Rashid sent 5 bulk invitations via CSV upload',
-    actor: 'Saad Al-Rashid',
-    time: '4 days ago',
-  },
-  {
-    id: 'ta-6',
-    type: 'joined' as const,
-    description: 'Fatima Al-Sabah accepted the invitation and joined the team',
-    actor: 'Fatima Al-Sabah',
-    time: '5 days ago',
-  },
-  {
-    id: 'ta-7',
-    type: 'role_changed' as const,
-    description: 'Nadia Khalil changed role of Mariam Al-Thani from Editor to Admin',
-    actor: 'Nadia Khalil',
-    time: '6 days ago',
-  },
-  {
-    id: 'ta-8',
-    type: 'invited' as const,
-    description: 'Saad Al-Rashid invited Bader Al-Kandari as Viewer',
-    actor: 'Saad Al-Rashid',
-    time: '7 days ago',
-  },
-  {
-    id: 'ta-9',
-    type: 'suspended' as const,
-    description: 'Hassan Al-Maktoum was suspended by Saad Al-Rashid',
-    actor: 'Saad Al-Rashid',
-    time: '8 days ago',
-  },
-  {
-    id: 'ta-10',
-    type: 'bulk_invite' as const,
-    description: 'Nadia Khalil sent 3 bulk invitations via CSV upload',
-    actor: 'Nadia Khalil',
-    time: '9 days ago',
-  },
-];
-
-const ACTIVITY_ICON_MAP = {
-  invited: { Icon: UserPlus, color: 'text-blue-400' },
-  joined: { Icon: UserCheck, color: 'text-[#3ECF8E]' },
-  role_changed: { Icon: Shield, color: 'text-purple-400' },
-  suspended: { Icon: UserX, color: 'text-destructive' },
-  bulk_invite: { Icon: Users, color: 'text-yellow-400' },
-} as const;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -336,9 +249,6 @@ function TeamPageContent() {
   const [editRoleTarget, setEditRoleTarget] = useState<TeamMember | null>(null);
   const [editRoleValue, setEditRoleValue] = useState<TeamRole>('Viewer');
 
-  // Activity log sheet
-  const [activityLogOpen, setActivityLogOpen] = useState(false);
-
   // Confirm dialogs
   const [suspendTarget, setSuspendTarget] = useState<TeamMember | null>(null);
   const [reactivateTarget, setReactivateTarget] = useState<TeamMember | null>(null);
@@ -463,15 +373,6 @@ function TeamPageContent() {
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5 text-xs font-medium"
-                onClick={() => setActivityLogOpen(true)}
-              >
-                <ActivitySquare className="h-3.5 w-3.5" />
-                Activity Log
-              </Button>
               <Button asChild variant="outline" size="sm" className="gap-1.5 text-xs font-medium">
                 <Link href="/team/invite/bulk">
                   <Upload className="h-3.5 w-3.5" />
@@ -608,36 +509,6 @@ function TeamPageContent() {
           />
         </TabsContent>
       </Tabs>
-
-      {/* Activity Log Sheet */}
-      <Sheet open={activityLogOpen} onOpenChange={setActivityLogOpen}>
-        <SheetContent className="w-96 overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Activity Log</SheetTitle>
-          </SheetHeader>
-          <div className="mt-4 space-y-0">
-            {TEAM_ACTIVITIES.map((a) => {
-              const { Icon, color } = ACTIVITY_ICON_MAP[a.type];
-              return (
-                <div
-                  key={a.id}
-                  className="flex gap-3 px-1 py-3 border-b border-border/50 last:border-0"
-                >
-                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                    <Icon className={cn('h-4 w-4', color)} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-foreground">{a.description}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {a.actor} · {a.time}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </SheetContent>
-      </Sheet>
 
       {/* ── Drawer & dialogs ─────────────────────────────────────────────────── */}
 

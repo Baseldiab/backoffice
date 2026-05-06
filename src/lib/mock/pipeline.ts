@@ -5,7 +5,8 @@ export type RequirementType =
   | 'log_interaction'
   | 'manual_check'
   | 'legal_docs'
-  | 'payment_link';
+  | 'payment_link'
+  | 'payment_method';
 
 export interface StageRequirement {
   id: string;
@@ -53,6 +54,20 @@ export const PIPELINE_STAGES: PipelineStage[] = [
       { id: 'country', label: 'Country', type: 'data_field', field: 'country', isBlocker: true },
       { id: 'source_tagged', label: 'Tag lead source', type: 'data_field', field: 'source' },
       { id: 'owner_assigned', label: 'Assign owner', type: 'data_field', field: 'assignedTo' },
+      {
+        id: 'platforms_selected',
+        label: 'Target platforms',
+        type: 'data_field',
+        field: 'platforms',
+        isBlocker: true,
+      },
+      {
+        id: 'goals_captured',
+        label: 'Business goals captured',
+        type: 'data_field',
+        field: 'goals',
+        isBlocker: true,
+      },
     ],
   },
   {
@@ -160,9 +175,9 @@ export const PIPELINE_STAGES: PipelineStage[] = [
     color: '#EC4899',
     requirements: [
       {
-        id: 'payment_link_generated',
-        label: 'Generate payment link',
-        type: 'payment_link',
+        id: 'payment_method_selected',
+        label: 'Select payment method',
+        type: 'payment_method',
         isBlocker: true,
       },
       {
@@ -267,9 +282,13 @@ export interface Deal {
     status: 'pending' | 'paid' | 'expired';
     createdAt: string;
   } | null;
+  platforms: ('iOS' | 'Android' | 'Web')[];
+  goals: string;
   tags: string[];
   website: string;
   lostReason?: string;
+  paymentMethod?: 'payment_link' | 'bank_transfer';
+  bankTransferReceipt?: { fileName: string; uploadedAt: string } | null;
   completedRequirements: string[];
 }
 
@@ -329,6 +348,8 @@ export const deals: Deal[] = [
         canEdit: false,
       },
     ],
+    platforms: ['iOS', 'Web'],
+    goals: 'Increase user engagement through in-app stories for our e-commerce app',
     tags: ['retail', 'high-intent'],
     website: 'https://maisonretail.sa',
     completedRequirements: [],
@@ -401,6 +422,9 @@ export const deals: Deal[] = [
         canEdit: true,
       },
     ],
+    platforms: ['iOS', 'Android'],
+    goals:
+      'Deliver patient health tips and appointment reminders via in-app stories across clinic locations',
     tags: ['healthcare', 'enterprise', 'referral'],
     website: 'https://alnoor.ae',
     completedRequirements: [],
@@ -456,6 +480,8 @@ export const deals: Deal[] = [
         canEdit: false,
       },
     ],
+    platforms: ['Android'],
+    goals: 'Promote daily specials and seasonal menus through stories in our food delivery app',
     tags: ['food', 'smb'],
     website: 'https://tamarafoods.kw',
     completedRequirements: [],
@@ -524,6 +550,8 @@ export const deals: Deal[] = [
         canEdit: true,
       },
     ],
+    platforms: ['iOS'],
+    goals: 'Showcase new vehicle launches and dealership events via in-app stories',
     tags: ['automotive', 'event'],
     website: 'https://riyadhauto.sa',
     completedRequirements: ['contact_verified'],
@@ -590,6 +618,8 @@ export const deals: Deal[] = [
         canEdit: true,
       },
     ],
+    platforms: ['iOS', 'Web'],
+    goals: 'Use stories for virtual property tours and new listing announcements',
     tags: ['real-estate', 'slow-cycle'],
     website: 'https://dohaliving.qa',
     completedRequirements: ['contact_verified', 'interaction_logged'],
@@ -656,6 +686,8 @@ export const deals: Deal[] = [
         canEdit: false,
       },
     ],
+    platforms: ['iOS', 'Android', 'Web'],
+    goals: 'Educate healthcare professionals on new products through interactive in-app stories',
     tags: ['pharma', 'enterprise', 'high-priority'],
     website: 'https://gulfpharma.ae',
     completedRequirements: ['industry', 'company_size', 'decision_maker', 'demo_completed'],
@@ -720,6 +752,9 @@ export const deals: Deal[] = [
         canEdit: false,
       },
     ],
+    platforms: ['iOS', 'Android'],
+    goals:
+      'Run seasonal Ramadan story campaigns across brand portfolio to boost consumer engagement',
     tags: ['fmcg', 'enterprise', 'seasonal'],
     website: 'https://savola.sa',
     completedRequirements: ['industry', 'company_size', 'demo_completed'],
@@ -787,6 +822,8 @@ export const deals: Deal[] = [
         canEdit: false,
       },
     ],
+    platforms: ['iOS', 'Android', 'Web'],
+    goals: 'Deliver breaking news and exclusive content through immersive stories',
     tags: ['media', 'legal-review'],
     website: 'https://jazeelmedia.kw',
     completedRequirements: ['plan_selected'],
@@ -853,6 +890,9 @@ export const deals: Deal[] = [
         canEdit: false,
       },
     ],
+    platforms: ['iOS', 'Android'],
+    goals:
+      'Embed Hikayat stories across all 4 mobile apps for property showcases and lifestyle content',
     tags: ['real-estate', 'enterprise', 'strategic'],
     website: 'https://emaar.ae',
     completedRequirements: ['plan_selected', 'billing_cycle'],
@@ -921,8 +961,11 @@ export const deals: Deal[] = [
         canEdit: false,
       },
     ],
+    platforms: ['iOS', 'Web'],
+    goals: 'Onboard new users with interactive financial tips and product tutorials',
     tags: ['fintech', 'close-ready'],
     website: 'https://tamkeen.sa',
+    paymentMethod: 'payment_link',
     paymentLink: {
       id: 'pl-010',
       url: 'https://pay.hikayat.io/inv/pl-010',
@@ -933,7 +976,7 @@ export const deals: Deal[] = [
       status: 'pending',
       createdAt: '2026-04-19T10:00:00Z',
     },
-    completedRequirements: ['payment_link_generated', 'agreement_signed'],
+    completedRequirements: ['payment_method_selected', 'agreement_signed'],
   },
   {
     id: 'deal-011',
@@ -997,6 +1040,8 @@ export const deals: Deal[] = [
         canEdit: false,
       },
     ],
+    platforms: ['iOS', 'Android'],
+    goals: 'Simplify insurance product education and claims updates through in-app stories',
     tags: ['insurance', 'contract-ready'],
     website: 'https://warba.kw',
     completedRequirements: ['agreement_signed'],
@@ -1065,9 +1110,11 @@ export const deals: Deal[] = [
         canEdit: false,
       },
     ],
+    platforms: ['iOS', 'Android', 'Web'],
+    goals: 'Drive flash sale engagement and personalized product recommendations via stories',
     tags: ['e-commerce', 'enterprise', 'won'],
     website: 'https://noon.com',
-    completedRequirements: ['payment_link_generated', 'agreement_signed', 'payment_tracked'],
+    completedRequirements: ['payment_method_selected', 'agreement_signed', 'payment_tracked'],
   },
   {
     id: 'deal-013',
@@ -1130,9 +1177,11 @@ export const deals: Deal[] = [
         canEdit: false,
       },
     ],
+    platforms: ['iOS', 'Android'],
+    goals: 'Highlight new payment features and Arabic RTL story support for Gulf users',
     tags: ['fintech', 'rtl', 'reference-customer'],
     website: 'https://stcpay.com.sa',
-    completedRequirements: ['payment_link_generated', 'agreement_signed', 'payment_tracked'],
+    completedRequirements: ['payment_method_selected', 'agreement_signed', 'payment_tracked'],
   },
 
   // ── LOST (1) ──────────────────────────────────────────────────────────────
@@ -1199,6 +1248,8 @@ export const deals: Deal[] = [
         canEdit: true,
       },
     ],
+    platforms: ['iOS', 'Android', 'Web'],
+    goals: 'Engage telecom subscribers with personalized offers and plan upgrade stories',
     tags: ['telecom', 'budget-freeze', 'follow-up-q3'],
     website: 'https://zain.com',
     completedRequirements: ['demo_completed', 'decision_maker'],

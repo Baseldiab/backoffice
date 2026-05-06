@@ -20,6 +20,7 @@ import {
   Upload,
   Link2,
   Copy,
+  Building2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -102,6 +103,8 @@ const DEAL_FIELDS = [
     type: 'select',
     options: ['Website Form', 'Direct', 'Referral', 'Event'],
   },
+  { label: 'Platforms', field: 'platforms', type: 'multi-select' },
+  { label: 'Goals', field: 'goals', type: 'textarea' },
   {
     label: 'Plan',
     field: 'requestedPlan',
@@ -153,6 +156,7 @@ export default function PipelinePage() {
   const [markSentNote, setMarkSentNote] = useState('');
   const [editingActivity, setEditingActivity] = useState<DealActivity | null>(null);
   const [expandedReq, setExpandedReq] = useState<string | null>(null);
+  const [paymentMethodExpanded, setPaymentMethodExpanded] = useState(false);
   const [paymentLinkOpen, setPaymentLinkOpen] = useState(false);
   const [paymentStep, setPaymentStep] = useState<'form' | 'loading' | 'generated'>('form');
   const [generatedLink, setGeneratedLink] = useState('');
@@ -563,6 +567,109 @@ export default function PipelinePage() {
                   const options = 'options' in fieldDef ? fieldDef.options : undefined;
                   const value = selectedDeal[field as keyof typeof selectedDeal];
                   const isEditing = editingField === field;
+
+                  // ── Platforms (multi-select) ──
+                  if (type === 'multi-select' && field === 'platforms') {
+                    return (
+                      <div
+                        key={field}
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/50 group cursor-pointer"
+                        onClick={() => !isEditing && setEditingField(field)}
+                      >
+                        <span className="text-xs text-muted-foreground w-28 shrink-0">{label}</span>
+                        {isEditing ? (
+                          <div className="flex items-center gap-2 flex-1">
+                            {(['iOS', 'Android', 'Web'] as const).map((p) => (
+                              <button
+                                key={p}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const current = (selectedDeal.platforms || []) as (
+                                    | 'iOS'
+                                    | 'Android'
+                                    | 'Web'
+                                  )[];
+                                  updateDeal(selectedDeal.id, {
+                                    platforms: current.includes(p)
+                                      ? current.filter((x) => x !== p)
+                                      : [...current, p],
+                                  } as Partial<Deal>);
+                                }}
+                                className={cn(
+                                  'text-xs px-2.5 py-1 rounded-md border transition-all',
+                                  (selectedDeal.platforms || []).includes(p)
+                                    ? 'bg-primary/10 border-primary text-primary font-medium'
+                                    : 'border-border text-muted-foreground hover:border-primary/40',
+                                )}
+                              >
+                                {p}
+                              </button>
+                            ))}
+                            <button
+                              onClick={() => setEditingField(null)}
+                              className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+                            >
+                              Done
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <span className="text-sm flex-1">
+                              {(selectedDeal.platforms || []).length > 0 ? (
+                                (selectedDeal.platforms || []).join(', ')
+                              ) : (
+                                <span className="text-muted-foreground/40 italic text-xs">
+                                  + Add platforms
+                                </span>
+                              )}
+                            </span>
+                            <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 shrink-0" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  // ── Goals (textarea) ──
+                  if (type === 'textarea' && field === 'goals') {
+                    return (
+                      <div
+                        key={field}
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/50 group cursor-pointer"
+                        onClick={() => !isEditing && setEditingField(field)}
+                      >
+                        <span className="text-xs text-muted-foreground w-28 shrink-0">{label}</span>
+                        {isEditing ? (
+                          <textarea
+                            autoFocus
+                            defaultValue={selectedDeal.goals || ''}
+                            rows={3}
+                            onBlur={(e) => {
+                              updateDealField('goals', e.target.value);
+                              setEditingField(null);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Escape') setEditingField(null);
+                            }}
+                            className="flex-1 px-2 py-1.5 text-sm bg-background border border-primary rounded-lg resize-none focus:outline-none"
+                          />
+                        ) : (
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <span className="text-sm flex-1 truncate">
+                              {selectedDeal.goals ? (
+                                selectedDeal.goals
+                              ) : (
+                                <span className="text-muted-foreground/40 italic text-xs">
+                                  + Add goals
+                                </span>
+                              )}
+                            </span>
+                            <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 shrink-0" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
 
                   return (
                     <div
@@ -1023,146 +1130,96 @@ export default function PipelinePage() {
                       );
                     }
 
-                    // ── Non-documents stages: original rendering ──
-                    return (
-                      <div
-                        key={req.id}
-                        className={cn(
-                          'flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all',
-                          isCompleted
-                            ? 'bg-muted/30 border-border/30 opacity-60'
-                            : req.isBlocker
-                              ? 'bg-destructive/5 border-destructive/20'
-                              : 'bg-card border-border hover:border-border/80',
-                        )}
-                      >
-                        {isAutoChecked ? (
+                    // ── Payment method: custom rendering ──
+                    if (req.type === 'payment_method') {
+                      const paymentDone =
+                        selectedDeal.paymentLink?.url || selectedDeal.bankTransferReceipt;
+                      const pmCompleted = isCompleted || !!paymentDone;
+
+                      return (
+                        <div key={req.id} className="space-y-0">
+                          {/* Requirement row */}
                           <div
-                            className="w-5 h-5 rounded flex items-center justify-center shrink-0 border bg-primary border-primary opacity-70 cursor-default"
-                            title="Auto-filled from deal data"
-                          >
-                            <Check className="h-3 w-3 text-primary-foreground" />
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() =>
-                              isToggleable && toggleRequirement(selectedDeal.id, req.id)
-                            }
                             className={cn(
-                              'w-5 h-5 rounded flex items-center justify-center shrink-0 border transition-all',
-                              isCompleted
-                                ? 'bg-primary border-primary'
-                                : 'border-border hover:border-primary/50',
+                              'flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all',
+                              pmCompleted
+                                ? 'bg-muted/30 border-border/30 opacity-60'
+                                : req.isBlocker
+                                  ? 'bg-destructive/5 border-destructive/20'
+                                  : 'bg-card border-border hover:border-border/80',
                             )}
                           >
-                            {isCompleted && <Check className="h-3 w-3 text-primary-foreground" />}
-                          </button>
-                        )}
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span
+                            {/* Checkbox */}
+                            <div
                               className={cn(
-                                'text-sm',
-                                isCompleted && 'line-through text-muted-foreground',
+                                'w-5 h-5 rounded flex items-center justify-center shrink-0 border',
+                                pmCompleted ? 'bg-primary border-primary' : 'border-border',
                               )}
                             >
-                              {req.label}
-                            </span>
-                            {isAutoChecked && (
-                              <span className="text-[10px] text-muted-foreground italic">
-                                auto-filled
-                              </span>
-                            )}
-                            {req.isBlocker && !isCompleted && (
-                              <span className="text-xs text-destructive font-medium shrink-0">
-                                Required
-                              </span>
-                            )}
-                          </div>
-                          {req.description && !isCompleted && (
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {req.description}
-                            </p>
-                          )}
-                        </div>
-
-                        {!isCompleted &&
-                          (req.type === 'send_email' || req.type === 'send_whatsapp' ? (
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <button
-                                onClick={() => {
-                                  setActiveRequirement(req);
-                                  setSelectedTemplate('');
-                                  setEmailNote('');
-                                  setSendEmailOpen(true);
-                                }}
-                                className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium"
-                              >
-                                <Mail className="h-3 w-3" />
-                                Send
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setActiveRequirement(req);
-                                  setMarkSentOpen(true);
-                                }}
-                                className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors"
-                              >
-                                <Check className="h-3 w-3" />
-                                Done
-                              </button>
+                              {pmCompleted && <Check className="h-3 w-3 text-primary-foreground" />}
                             </div>
-                          ) : req.type === 'log_interaction' ? (
-                            <button
-                              onClick={() => {
-                                setActiveRequirement(req);
-                                setInteractionType('call');
-                                setInteractionDate(new Date().toISOString().slice(0, 16));
-                                setInteractionNotes('');
-                                setLogInteractionOpen(true);
-                              }}
-                              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors shrink-0"
-                            >
-                              <MessageSquare className="h-3.5 w-3.5" />
-                              Log
-                            </button>
-                          ) : req.type === 'payment_link' ? (
-                            selectedDeal.paymentLink ? (
-                              <div className="flex items-center gap-1.5 shrink-0">
+
+                            {/* Label */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
                                 <span
                                   className={cn(
-                                    'text-xs font-medium px-2 py-0.5 rounded-full',
-                                    selectedDeal.paymentLink.status === 'paid'
-                                      ? 'bg-primary/10 text-primary'
-                                      : selectedDeal.paymentLink.status === 'expired'
-                                        ? 'bg-destructive/10 text-destructive'
-                                        : 'bg-amber-500/10 text-amber-400',
+                                    'text-sm',
+                                    pmCompleted && 'line-through text-muted-foreground',
                                   )}
                                 >
-                                  {selectedDeal.paymentLink.status === 'paid'
-                                    ? 'Paid'
-                                    : selectedDeal.paymentLink.status === 'expired'
-                                      ? 'Expired'
-                                      : 'Pending'}
+                                  {req.label}
                                 </span>
-                                <button
-                                  onClick={() => {
-                                    setGeneratedLink(selectedDeal.paymentLink!.url);
-                                    setPaymentAmount(selectedDeal.paymentLink!.amount.toString());
-                                    setPaymentCurrency(selectedDeal.paymentLink!.currency);
-                                    setLinkCopied(false);
-                                    setPaymentStep('generated');
-                                    setPaymentLinkOpen(true);
-                                  }}
-                                  className="text-xs text-primary hover:underline"
-                                >
-                                  View
-                                </button>
+                                {req.isBlocker && !pmCompleted && (
+                                  <span className="text-xs text-destructive font-medium shrink-0">
+                                    Required
+                                  </span>
+                                )}
                               </div>
-                            ) : (
+                              {pmCompleted && selectedDeal.paymentMethod && (
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  {selectedDeal.paymentMethod === 'payment_link'
+                                    ? `Payment Link · ${selectedDeal.paymentLink?.status === 'paid' ? 'Paid' : 'Pending'}`
+                                    : 'Bank Transfer · Receipt uploaded'}
+                                </p>
+                              )}
+                              {!pmCompleted && selectedDeal.paymentMethod && (
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  {selectedDeal.paymentMethod === 'payment_link'
+                                    ? 'Payment Link'
+                                    : 'Bank Transfer'}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Action button */}
+                            {!pmCompleted && !selectedDeal.paymentMethod && (
+                              <button
+                                onClick={() => setPaymentMethodExpanded(!paymentMethodExpanded)}
+                                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors shrink-0"
+                              >
+                                Select
+                              </button>
+                            )}
+                            {pmCompleted && (
+                              <button
+                                onClick={() => setPaymentMethodExpanded(!paymentMethodExpanded)}
+                                className="text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                              >
+                                {paymentMethodExpanded ? 'Close' : 'Edit'}
+                              </button>
+                            )}
+                          </div>
+
+                          {/* STATE 1: Method selector (inline) */}
+                          {!pmCompleted && !selectedDeal.paymentMethod && paymentMethodExpanded && (
+                            <div className="mt-2 ml-7 grid grid-cols-2 gap-2">
                               <button
                                 onClick={() => {
+                                  updateDeal(selectedDeal.id, {
+                                    paymentMethod: 'payment_link',
+                                  } as Partial<Deal>);
+                                  setPaymentMethodExpanded(false);
                                   const mrr = selectedDeal.estimatedMRR || 0;
                                   const cycle = selectedDeal.billingCycle || 'Monthly';
                                   const amount = cycle === 'Annual' ? mrr * 12 : mrr;
@@ -1174,27 +1231,333 @@ export default function PipelinePage() {
                                   setLinkCopied(false);
                                   setPaymentLinkOpen(true);
                                 }}
-                                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium shrink-0"
+                                className="flex flex-col items-center gap-2 py-3 rounded-xl border border-border hover:border-primary/50 bg-muted/30 transition-all"
                               >
-                                <Link2 className="h-3.5 w-3.5" />
-                                Generate
+                                <Link2 className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-xs font-medium text-muted-foreground">
+                                  Payment Link
+                                </span>
                               </button>
-                            )
-                          ) : req.type === 'data_field' && req.field ? (
-                            <button
-                              onClick={() => setEditingField(req.field!)}
-                              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors shrink-0"
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                              {selectedDeal[req.field as keyof typeof selectedDeal]
-                                ? 'Edit'
-                                : 'Add'}
-                            </button>
-                          ) : null)}
+                              <button
+                                onClick={() => {
+                                  updateDeal(selectedDeal.id, {
+                                    paymentMethod: 'bank_transfer',
+                                  } as Partial<Deal>);
+                                }}
+                                className="flex flex-col items-center gap-2 py-3 rounded-xl border border-border hover:border-primary/50 bg-muted/30 transition-all"
+                              >
+                                <Building2 className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-xs font-medium text-muted-foreground">
+                                  Bank Transfer
+                                </span>
+                              </button>
+                            </div>
+                          )}
 
-                        {isCompleted && (
-                          <span className="text-xs text-muted-foreground shrink-0">Done</span>
-                        )}
+                          {/* STATE 2b: Bank transfer inline — bank details + upload */}
+                          {!pmCompleted && selectedDeal.paymentMethod === 'bank_transfer' && (
+                            <div className="mt-2 ml-7 space-y-2">
+                              <div className="px-3 py-2.5 bg-muted/30 border border-border rounded-lg">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-xs font-medium text-muted-foreground">
+                                    Bank Details
+                                  </span>
+                                  <button
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(
+                                        'Bank: Riyad Bank | IBAN: SA12 3456 7890 1234 5678 90 | Ref: ' +
+                                          selectedDeal.id,
+                                      );
+                                      toast.success('Copied!');
+                                    }}
+                                    className="flex items-center gap-1 text-xs text-primary hover:underline"
+                                  >
+                                    <Copy className="h-3 w-3" /> Copy
+                                  </button>
+                                </div>
+                                <div className="space-y-1">
+                                  {[
+                                    { label: 'Bank', value: 'Riyad Bank' },
+                                    { label: 'IBAN', value: 'SA12 3456 7890 1234 5678 90' },
+                                    { label: 'Ref', value: selectedDeal.id },
+                                  ].map(({ label, value }) => (
+                                    <div key={label} className="flex justify-between text-xs">
+                                      <span className="text-muted-foreground">{label}</span>
+                                      <span className="font-mono font-medium">{value}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  updateDeal(selectedDeal.id, {
+                                    bankTransferReceipt: {
+                                      fileName: 'Transfer_Receipt.pdf',
+                                      uploadedAt: new Date().toISOString(),
+                                    },
+                                  } as Partial<Deal>);
+                                  toggleRequirement(selectedDeal.id, 'payment_method_selected');
+                                  toast.success('Receipt uploaded!');
+                                }}
+                                className="w-full h-10 flex items-center justify-center gap-2 border-2 border-dashed border-border rounded-lg text-xs text-muted-foreground hover:border-blue-400/50 hover:text-blue-400 transition-colors"
+                              >
+                                <Upload className="h-4 w-4" />
+                                Upload Transfer Receipt
+                              </button>
+                            </div>
+                          )}
+
+                          {/* STATE 3: Expanded details for completed payment */}
+                          {pmCompleted && paymentMethodExpanded && (
+                            <>
+                              {selectedDeal.paymentMethod === 'payment_link' &&
+                                selectedDeal.paymentLink && (
+                                  <div className="mt-2 ml-7 space-y-2">
+                                    <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 border border-border rounded-lg">
+                                      <Link2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                      <span className="text-xs font-mono text-muted-foreground truncate flex-1">
+                                        {selectedDeal.paymentLink.url}
+                                      </span>
+                                      <span
+                                        className={cn(
+                                          'text-xs px-2 py-0.5 rounded-full font-medium shrink-0',
+                                          selectedDeal.paymentLink.status === 'paid'
+                                            ? 'bg-primary/10 text-primary'
+                                            : 'bg-yellow-500/10 text-yellow-400',
+                                        )}
+                                      >
+                                        {selectedDeal.paymentLink.status === 'paid'
+                                          ? '✓ Paid'
+                                          : 'Pending'}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-3 px-1">
+                                      <button
+                                        onClick={() => {
+                                          setGeneratedLink(selectedDeal.paymentLink!.url);
+                                          setPaymentAmount(
+                                            selectedDeal.paymentLink!.amount.toString(),
+                                          );
+                                          setPaymentCurrency(selectedDeal.paymentLink!.currency);
+                                          setLinkCopied(false);
+                                          setPaymentStep('generated');
+                                          setPaymentLinkOpen(true);
+                                        }}
+                                        className="text-xs text-primary hover:underline"
+                                      >
+                                        View / Resend
+                                      </button>
+                                      <span className="text-muted-foreground/30">·</span>
+                                      <button
+                                        onClick={() => {
+                                          updateDeal(selectedDeal.id, {
+                                            paymentMethod: undefined,
+                                            paymentLink: undefined,
+                                            completedRequirements:
+                                              selectedDeal.completedRequirements?.filter(
+                                                (r: string) => r !== 'payment_method_selected',
+                                              ) || [],
+                                          } as Partial<Deal>);
+                                          setPaymentMethodExpanded(false);
+                                        }}
+                                        className="text-xs text-muted-foreground hover:text-foreground"
+                                      >
+                                        Change method
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+
+                              {selectedDeal.paymentMethod === 'bank_transfer' &&
+                                selectedDeal.bankTransferReceipt && (
+                                  <div className="mt-2 ml-7 space-y-2">
+                                    <div className="flex items-center gap-3 px-3 py-2.5 bg-muted/50 border border-border rounded-lg">
+                                      <FileText className="h-4 w-4 text-primary shrink-0" />
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-medium truncate">
+                                          {selectedDeal.bankTransferReceipt.fileName}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {formatRelativeDate(
+                                            selectedDeal.bankTransferReceipt.uploadedAt,
+                                          )}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-3 px-1">
+                                      <button
+                                        onClick={() => toast.info('Opening receipt...')}
+                                        className="text-xs text-primary hover:underline"
+                                      >
+                                        View Receipt
+                                      </button>
+                                      <span className="text-muted-foreground/30">·</span>
+                                      <button
+                                        onClick={() => {
+                                          updateDeal(selectedDeal.id, {
+                                            bankTransferReceipt: null,
+                                          } as Partial<Deal>);
+                                          const reqs =
+                                            selectedDeal.completedRequirements?.filter(
+                                              (r: string) => r !== 'payment_method_selected',
+                                            ) || [];
+                                          updateDeal(selectedDeal.id, {
+                                            completedRequirements: reqs,
+                                          } as Partial<Deal>);
+                                        }}
+                                        className="text-xs text-muted-foreground hover:text-destructive"
+                                      >
+                                        Remove receipt
+                                      </button>
+                                      <span className="text-muted-foreground/30">·</span>
+                                      <button
+                                        onClick={() => {
+                                          updateDeal(selectedDeal.id, {
+                                            paymentMethod: undefined,
+                                            bankTransferReceipt: null,
+                                          } as Partial<Deal>);
+                                          const reqs =
+                                            selectedDeal.completedRequirements?.filter(
+                                              (r: string) => r !== 'payment_method_selected',
+                                            ) || [];
+                                          updateDeal(selectedDeal.id, {
+                                            completedRequirements: reqs,
+                                          } as Partial<Deal>);
+                                          setPaymentMethodExpanded(false);
+                                        }}
+                                        className="text-xs text-muted-foreground hover:text-foreground"
+                                      >
+                                        Change method
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                            </>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    // ── Non-documents stages: original rendering ──
+                    return (
+                      <div key={req.id} className="space-y-2">
+                        <div
+                          className={cn(
+                            'flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all',
+                            isCompleted
+                              ? 'bg-muted/30 border-border/30 opacity-60'
+                              : req.isBlocker
+                                ? 'bg-destructive/5 border-destructive/20'
+                                : 'bg-card border-border hover:border-border/80',
+                          )}
+                        >
+                          {isAutoChecked ? (
+                            <div
+                              className="w-5 h-5 rounded flex items-center justify-center shrink-0 border bg-primary border-primary opacity-70 cursor-default"
+                              title="Auto-filled from deal data"
+                            >
+                              <Check className="h-3 w-3 text-primary-foreground" />
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() =>
+                                isToggleable && toggleRequirement(selectedDeal.id, req.id)
+                              }
+                              className={cn(
+                                'w-5 h-5 rounded flex items-center justify-center shrink-0 border transition-all',
+                                isCompleted
+                                  ? 'bg-primary border-primary'
+                                  : 'border-border hover:border-primary/50',
+                              )}
+                            >
+                              {isCompleted && <Check className="h-3 w-3 text-primary-foreground" />}
+                            </button>
+                          )}
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className={cn(
+                                  'text-sm',
+                                  isCompleted && 'line-through text-muted-foreground',
+                                )}
+                              >
+                                {req.label}
+                              </span>
+                              {isAutoChecked && (
+                                <span className="text-[10px] text-muted-foreground italic">
+                                  auto-filled
+                                </span>
+                              )}
+                              {req.isBlocker && !isCompleted && (
+                                <span className="text-xs text-destructive font-medium shrink-0">
+                                  Required
+                                </span>
+                              )}
+                            </div>
+                            {req.description && !isCompleted && (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {req.description}
+                              </p>
+                            )}
+                          </div>
+
+                          {!isCompleted &&
+                            (req.type === 'send_email' || req.type === 'send_whatsapp' ? (
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <button
+                                  onClick={() => {
+                                    setActiveRequirement(req);
+                                    setSelectedTemplate('');
+                                    setEmailNote('');
+                                    setSendEmailOpen(true);
+                                  }}
+                                  className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium"
+                                >
+                                  <Mail className="h-3 w-3" />
+                                  Send
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setActiveRequirement(req);
+                                    setMarkSentOpen(true);
+                                  }}
+                                  className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors"
+                                >
+                                  <Check className="h-3 w-3" />
+                                  Done
+                                </button>
+                              </div>
+                            ) : req.type === 'log_interaction' ? (
+                              <button
+                                onClick={() => {
+                                  setActiveRequirement(req);
+                                  setInteractionType('call');
+                                  setInteractionDate(new Date().toISOString().slice(0, 16));
+                                  setInteractionNotes('');
+                                  setLogInteractionOpen(true);
+                                }}
+                                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors shrink-0"
+                              >
+                                <MessageSquare className="h-3.5 w-3.5" />
+                                Log
+                              </button>
+                            ) : req.type === 'data_field' && req.field ? (
+                              <button
+                                onClick={() => setEditingField(req.field!)}
+                                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors shrink-0"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                                {selectedDeal[req.field as keyof typeof selectedDeal]
+                                  ? 'Edit'
+                                  : 'Add'}
+                              </button>
+                            ) : null)}
+
+                          {isCompleted && (
+                            <span className="text-xs text-muted-foreground shrink-0">Done</span>
+                          )}
+                        </div>
                       </div>
                     );
                   })}

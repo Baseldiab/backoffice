@@ -18,6 +18,7 @@ import {
   Kanban,
   Tag,
   LayoutTemplate,
+  History,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -73,6 +74,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: 'Plans', href: '/plans', icon: CreditCard },
       { label: 'Feature Flags', href: '/settings/feature-flags', icon: Flag },
       { label: 'API Keys', href: '/settings/api-keys', icon: KeyRound },
+      { label: 'Activity Log', href: '/activity-log', icon: History },
     ],
   },
 ];
