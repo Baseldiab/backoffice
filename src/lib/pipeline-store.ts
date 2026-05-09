@@ -30,6 +30,7 @@ interface PipelineState {
   addDeal: (deal: Deal) => void;
   markWon: (dealId: string) => void;
   markLost: (dealId: string, reason: string) => void;
+  confirmPayment: (dealId: string) => void;
   toggleRequirement: (dealId: string, requirementId: string) => void;
   clearAutoWon: () => void;
   getStageProgress: (dealId: string) => {
@@ -192,6 +193,42 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
               closedStatus: 'lost' as const,
               lostReason: reason,
               updatedAt: now,
+            }
+          : state.selectedDeal,
+    }));
+  },
+
+  confirmPayment: (dealId) => {
+    set((state) => ({
+      deals: state.deals.map((deal) =>
+        deal.id === dealId
+          ? {
+              ...deal,
+              paymentStatus: 'confirmed' as const,
+              paymentConfirmedAt: new Date().toISOString(),
+              paymentConfirmedBy: 'Admin',
+              completedRequirements: [
+                ...(deal.completedRequirements || []),
+                ...(!deal.completedRequirements?.includes('payment_tracked')
+                  ? ['payment_tracked']
+                  : []),
+              ],
+            }
+          : deal,
+      ),
+      selectedDeal:
+        state.selectedDeal?.id === dealId
+          ? {
+              ...state.selectedDeal,
+              paymentStatus: 'confirmed' as const,
+              paymentConfirmedAt: new Date().toISOString(),
+              paymentConfirmedBy: 'Admin',
+              completedRequirements: [
+                ...(state.selectedDeal.completedRequirements || []),
+                ...(!state.selectedDeal.completedRequirements?.includes('payment_tracked')
+                  ? ['payment_tracked']
+                  : []),
+              ],
             }
           : state.selectedDeal,
     }));

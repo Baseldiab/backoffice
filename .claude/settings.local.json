@@ -143,7 +143,14 @@
       "Bash(npx prettier --write src/lib/mock/pipeline.ts src/lib/pipeline-store.ts src/app/\\\\\\(backoffice\\\\\\)/pipeline/page.tsx src/components/pipeline/KanbanBoard.tsx 2>&1 | tail -5)",
       "Bash(npx prettier --write \"src/app/\\(backoffice\\)/marketing/discounts/page.tsx\" \"src/app/\\(backoffice\\)/marketing/discounts/new/page.tsx\" \"src/app/\\(backoffice\\)/marketing/discounts/[id]/edit/page.tsx\" 2>&1)",
       "Bash(npx prettier --write \\\\\n  \"src/lib/mock/templates.ts\" \\\\\n  \"src/app/\\(backoffice\\)/marketing/templates/page.tsx\" \\\\\n  \"src/app/\\(backoffice\\)/marketing/templates/new/page.tsx\" \\\\\n  \"src/app/\\(backoffice\\)/marketing/templates/[id]/edit/page.tsx\" \\\\\n  2>&1)",
-      "Bash(npx prettier --write \"src/app/\\(backoffice\\)/pipeline/page.tsx\" 2>&1)"
+      "Bash(npx prettier --write \"src/app/\\(backoffice\\)/pipeline/page.tsx\" 2>&1)",
+      "Bash(./node_modules/.bin/next build 2>&1 | tail -40)",
+      "Bash(npm install 2>&1 | tail -5 && npx --no-install next build 2>&1 | tail -40)",
+      "Bash(npx --no-install prettier --write src/lib/pipeline-store.ts src/app/\\\\\\(backoffice\\\\\\)/pipeline/page.tsx 2>&1)",
+      "Bash(npx --no-install next build 2>&1 | tail -20)",
+      "Bash(npx --no-install next build 2>&1 | tail -10)",
+      "Bash(npx --no-install next build 2>&1 | tail -15)",
+      "Bash(npx --no-install prettier --write src/app/\\\\\\(backoffice\\\\\\)/pipeline/page.tsx 2>&1)"
     ]
   }
 }

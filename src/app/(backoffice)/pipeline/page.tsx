@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Check,
   ChevronRight,
+  ChevronDown,
   AlertCircle,
   Lock,
   Mail,
@@ -21,6 +22,7 @@ import {
   Link2,
   Copy,
   Building2,
+  Trophy,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -124,6 +126,7 @@ export default function PipelinePage() {
     markLost,
     moveDealToStage,
     toggleRequirement,
+    confirmPayment,
     addActivity,
     updateDeal,
     addNote,
@@ -157,6 +160,8 @@ export default function PipelinePage() {
   const [editingActivity, setEditingActivity] = useState<DealActivity | null>(null);
   const [expandedReq, setExpandedReq] = useState<string | null>(null);
   const [paymentMethodExpanded, setPaymentMethodExpanded] = useState(false);
+  const [confirmPaymentOpen, setConfirmPaymentOpen] = useState(false);
+  const [trackPaymentOpen, setTrackPaymentOpen] = useState(false);
   const [paymentLinkOpen, setPaymentLinkOpen] = useState(false);
   const [paymentStep, setPaymentStep] = useState<'form' | 'loading' | 'generated'>('form');
   const [generatedLink, setGeneratedLink] = useState('');
@@ -1307,31 +1312,106 @@ export default function PipelinePage() {
                             </div>
                           )}
 
-                          {/* STATE 3: Expanded details for completed payment */}
+                          {/* STATE 3: Unified payment method + status card */}
                           {pmCompleted && paymentMethodExpanded && (
                             <>
                               {selectedDeal.paymentMethod === 'payment_link' &&
                                 selectedDeal.paymentLink && (
-                                  <div className="mt-2 ml-7 space-y-2">
-                                    <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 border border-border rounded-lg">
-                                      <Link2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                                      <span className="text-xs font-mono text-muted-foreground truncate flex-1">
-                                        {selectedDeal.paymentLink.url}
-                                      </span>
-                                      <span
-                                        className={cn(
-                                          'text-xs px-2 py-0.5 rounded-full font-medium shrink-0',
-                                          selectedDeal.paymentLink.status === 'paid'
-                                            ? 'bg-primary/10 text-primary'
-                                            : 'bg-yellow-500/10 text-yellow-400',
-                                        )}
-                                      >
-                                        {selectedDeal.paymentLink.status === 'paid'
-                                          ? '✓ Paid'
-                                          : 'Pending'}
+                                  <div className="mt-2 ml-7 rounded-xl border border-border overflow-hidden">
+                                    {/* Row 1: Method summary */}
+                                    <div className="flex items-center gap-2.5 px-3 py-2.5 border-b border-border/50">
+                                      <Link2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-medium">Payment Link</p>
+                                        <p className="text-xs text-muted-foreground truncate">
+                                          {selectedDeal.paymentLink.url}
+                                        </p>
+                                      </div>
+                                      <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 font-medium shrink-0">
+                                        Pending
                                       </span>
                                     </div>
-                                    <div className="flex items-center gap-3 px-1">
+
+                                    {/* Row 2: Payment status */}
+                                    {selectedDeal.paymentStatus !== 'confirmed' ? (
+                                      <div className="px-3 py-2.5 border-b border-border/50">
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <div className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse shrink-0" />
+                                          <span className="text-xs text-yellow-400 font-medium">
+                                            Awaiting Payment
+                                          </span>
+                                        </div>
+                                        <Button
+                                          size="sm"
+                                          className="w-full gap-2 h-8 text-xs"
+                                          onClick={() => setConfirmPaymentOpen(true)}
+                                        >
+                                          <CheckCircle2 className="h-3.5 w-3.5" />
+                                          Confirm Payment Received
+                                        </Button>
+                                      </div>
+                                    ) : (
+                                      <div className="border-b border-border/50">
+                                        <button
+                                          onClick={() => setTrackPaymentOpen(!trackPaymentOpen)}
+                                          className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted/30 transition-colors"
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                                            <span className="text-xs font-medium text-primary">
+                                              Payment Confirmed ✓
+                                            </span>
+                                          </div>
+                                          <ChevronDown
+                                            className={cn(
+                                              'h-3.5 w-3.5 text-muted-foreground transition-transform',
+                                              trackPaymentOpen && 'rotate-180',
+                                            )}
+                                          />
+                                        </button>
+                                        {trackPaymentOpen && (
+                                          <div className="px-3 pb-3 space-y-1.5 border-t border-border/30">
+                                            {[
+                                              {
+                                                label: 'Amount',
+                                                value: `${selectedDeal.paymentLink?.currency || 'SAR'} ${(selectedDeal.paymentLink?.amount || 0).toLocaleString()}`,
+                                              },
+                                              { label: 'Method', value: 'Payment Link' },
+                                              { label: 'Reference', value: selectedDeal.id },
+                                              {
+                                                label: 'Confirmed',
+                                                value: selectedDeal.paymentConfirmedAt
+                                                  ? new Date(
+                                                      selectedDeal.paymentConfirmedAt,
+                                                    ).toLocaleDateString('en-GB', {
+                                                      day: '2-digit',
+                                                      month: 'short',
+                                                      year: 'numeric',
+                                                    })
+                                                  : '—',
+                                              },
+                                              {
+                                                label: 'By',
+                                                value: selectedDeal.paymentConfirmedBy || '—',
+                                              },
+                                            ].map(({ label, value }) => (
+                                              <div
+                                                key={label}
+                                                className="flex justify-between pt-1.5"
+                                              >
+                                                <span className="text-xs text-muted-foreground">
+                                                  {label}
+                                                </span>
+                                                <span className="text-xs font-medium">{value}</span>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+
+                                    {/* Row 3: Actions */}
+                                    <div className="flex items-center gap-3 px-3 py-2">
                                       <button
                                         onClick={() => {
                                           setGeneratedLink(selectedDeal.paymentLink!.url);
@@ -1353,6 +1433,7 @@ export default function PipelinePage() {
                                           updateDeal(selectedDeal.id, {
                                             paymentMethod: undefined,
                                             paymentLink: undefined,
+                                            paymentStatus: undefined,
                                             completedRequirements:
                                               selectedDeal.completedRequirements?.filter(
                                                 (r: string) => r !== 'payment_method_selected',
@@ -1370,21 +1451,106 @@ export default function PipelinePage() {
 
                               {selectedDeal.paymentMethod === 'bank_transfer' &&
                                 selectedDeal.bankTransferReceipt && (
-                                  <div className="mt-2 ml-7 space-y-2">
-                                    <div className="flex items-center gap-3 px-3 py-2.5 bg-muted/50 border border-border rounded-lg">
-                                      <FileText className="h-4 w-4 text-primary shrink-0" />
+                                  <div className="mt-2 ml-7 rounded-xl border border-border overflow-hidden">
+                                    {/* Row 1: Method summary */}
+                                    <div className="flex items-center gap-3 px-3 py-2.5 border-b border-border/50">
+                                      <Building2 className="h-3.5 w-3.5 text-blue-400 shrink-0" />
                                       <div className="flex-1 min-w-0">
-                                        <p className="text-xs font-medium truncate">
+                                        <p className="text-xs font-medium">Bank Transfer</p>
+                                        <p className="text-xs text-muted-foreground truncate">
                                           {selectedDeal.bankTransferReceipt.fileName}
                                         </p>
-                                        <p className="text-xs text-muted-foreground">
-                                          {formatRelativeDate(
-                                            selectedDeal.bankTransferReceipt.uploadedAt,
-                                          )}
-                                        </p>
                                       </div>
+                                      <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 font-medium shrink-0">
+                                        Pending
+                                      </span>
                                     </div>
-                                    <div className="flex items-center gap-3 px-1">
+
+                                    {/* Row 2: Payment status */}
+                                    {selectedDeal.paymentStatus !== 'confirmed' ? (
+                                      <div className="px-3 py-2.5 border-b border-border/50">
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <div className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse shrink-0" />
+                                          <span className="text-xs text-yellow-400 font-medium">
+                                            Awaiting Payment
+                                          </span>
+                                        </div>
+                                        <Button
+                                          size="sm"
+                                          className="w-full gap-2 h-8 text-xs"
+                                          onClick={() => setConfirmPaymentOpen(true)}
+                                        >
+                                          <CheckCircle2 className="h-3.5 w-3.5" />
+                                          Confirm Payment Received
+                                        </Button>
+                                      </div>
+                                    ) : (
+                                      <div className="border-b border-border/50">
+                                        <button
+                                          onClick={() => setTrackPaymentOpen(!trackPaymentOpen)}
+                                          className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted/30 transition-colors"
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                                            <span className="text-xs font-medium text-primary">
+                                              Payment Confirmed ✓
+                                            </span>
+                                          </div>
+                                          <ChevronDown
+                                            className={cn(
+                                              'h-3.5 w-3.5 text-muted-foreground transition-transform',
+                                              trackPaymentOpen && 'rotate-180',
+                                            )}
+                                          />
+                                        </button>
+                                        {trackPaymentOpen && (
+                                          <div className="px-3 pb-3 space-y-1.5 border-t border-border/30">
+                                            {[
+                                              {
+                                                label: 'Amount',
+                                                value: `SAR ${(selectedDeal.estimatedMRR || 0).toLocaleString()}`,
+                                              },
+                                              { label: 'Method', value: 'Bank Transfer' },
+                                              {
+                                                label: 'Receipt',
+                                                value:
+                                                  selectedDeal.bankTransferReceipt?.fileName || '—',
+                                              },
+                                              { label: 'Reference', value: selectedDeal.id },
+                                              {
+                                                label: 'Confirmed',
+                                                value: selectedDeal.paymentConfirmedAt
+                                                  ? new Date(
+                                                      selectedDeal.paymentConfirmedAt,
+                                                    ).toLocaleDateString('en-GB', {
+                                                      day: '2-digit',
+                                                      month: 'short',
+                                                      year: 'numeric',
+                                                    })
+                                                  : '—',
+                                              },
+                                              {
+                                                label: 'By',
+                                                value: selectedDeal.paymentConfirmedBy || '—',
+                                              },
+                                            ].map(({ label, value }) => (
+                                              <div
+                                                key={label}
+                                                className="flex justify-between pt-1.5"
+                                              >
+                                                <span className="text-xs text-muted-foreground">
+                                                  {label}
+                                                </span>
+                                                <span className="text-xs font-medium">{value}</span>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+
+                                    {/* Row 3: Actions */}
+                                    <div className="flex items-center gap-3 px-3 py-2">
                                       <button
                                         onClick={() => toast.info('Opening receipt...')}
                                         className="text-xs text-primary hover:underline"
@@ -1396,13 +1562,10 @@ export default function PipelinePage() {
                                         onClick={() => {
                                           updateDeal(selectedDeal.id, {
                                             bankTransferReceipt: null,
-                                          } as Partial<Deal>);
-                                          const reqs =
-                                            selectedDeal.completedRequirements?.filter(
-                                              (r: string) => r !== 'payment_method_selected',
-                                            ) || [];
-                                          updateDeal(selectedDeal.id, {
-                                            completedRequirements: reqs,
+                                            completedRequirements:
+                                              selectedDeal.completedRequirements?.filter(
+                                                (r: string) => r !== 'payment_method_selected',
+                                              ) || [],
                                           } as Partial<Deal>);
                                         }}
                                         className="text-xs text-muted-foreground hover:text-destructive"
@@ -1415,13 +1578,11 @@ export default function PipelinePage() {
                                           updateDeal(selectedDeal.id, {
                                             paymentMethod: undefined,
                                             bankTransferReceipt: null,
-                                          } as Partial<Deal>);
-                                          const reqs =
-                                            selectedDeal.completedRequirements?.filter(
-                                              (r: string) => r !== 'payment_method_selected',
-                                            ) || [];
-                                          updateDeal(selectedDeal.id, {
-                                            completedRequirements: reqs,
+                                            paymentStatus: undefined,
+                                            completedRequirements:
+                                              selectedDeal.completedRequirements?.filter(
+                                                (r: string) => r !== 'payment_method_selected',
+                                              ) || [],
                                           } as Partial<Deal>);
                                           setPaymentMethodExpanded(false);
                                         }}
@@ -1749,6 +1910,17 @@ export default function PipelinePage() {
                   Move to {nextStage.label}
                 </Button>
               )
+            ) : selectedDeal.paymentStatus === 'confirmed' ? (
+              <Button
+                className="w-full gap-2"
+                onClick={() => {
+                  markWon(selectedDeal.id);
+                  toast.success(`"${selectedDeal.companyName}" marked as Won`);
+                }}
+              >
+                <Trophy className="h-4 w-4" />
+                Move to Won
+              </Button>
             ) : hasBlockers ? (
               <Button className="w-full gap-2" disabled>
                 <Lock className="h-4 w-4" />
@@ -1825,6 +1997,52 @@ export default function PipelinePage() {
               }}
             >
               Move Anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm Payment */}
+      <AlertDialog open={confirmPaymentOpen} onOpenChange={setConfirmPaymentOpen}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Payment Received?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Confirming payment received for <strong>{selectedDeal?.companyName}</strong>. This
+              action will be logged and cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="bg-muted/30 border border-border rounded-lg p-3 my-2 space-y-1.5">
+            {[
+              {
+                label: 'Amount',
+                value: `${selectedDeal?.paymentLink?.currency || 'SAR'} ${(selectedDeal?.paymentLink?.amount || selectedDeal?.estimatedMRR || 0).toLocaleString()}`,
+              },
+              {
+                label: 'Method',
+                value:
+                  selectedDeal?.paymentMethod === 'payment_link' ? 'Payment Link' : 'Bank Transfer',
+              },
+              { label: 'Company', value: selectedDeal?.companyName },
+            ].map(({ label, value }) => (
+              <div key={label} className="flex justify-between text-sm">
+                <span className="text-muted-foreground">{label}</span>
+                <span className="font-medium">{value}</span>
+              </div>
+            ))}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                confirmPayment(selectedDeal!.id);
+                setConfirmPaymentOpen(false);
+                setTrackPaymentOpen(true);
+                toast.success('Payment confirmed! Deal ready to move to Won.');
+              }}
+            >
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              Confirm Payment
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

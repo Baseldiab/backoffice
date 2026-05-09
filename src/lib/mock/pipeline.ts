@@ -289,6 +289,9 @@ export interface Deal {
   lostReason?: string;
   paymentMethod?: 'payment_link' | 'bank_transfer';
   bankTransferReceipt?: { fileName: string; uploadedAt: string } | null;
+  paymentStatus?: 'pending' | 'confirmed' | 'failed' | 'expired';
+  paymentConfirmedAt?: string;
+  paymentConfirmedBy?: string;
   completedRequirements: string[];
 }
 
