@@ -16,6 +16,7 @@ const signOut = (_opts?: { callbackUrl?: string }) => {
 };
 
 const PAGE_TITLES: Record<string, string> = {
+  '/': 'Dashboard',
   '/dashboard': 'Dashboard',
   '/customers': 'Customers',
   '/billing': 'Billing',

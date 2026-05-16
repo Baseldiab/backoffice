@@ -36,7 +36,7 @@ interface NavGroup {
 const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Overview',
-    items: [{ label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard }],
+    items: [{ label: 'Dashboard', href: '/', icon: LayoutDashboard }],
   },
   {
     label: 'Customers',
@@ -83,7 +83,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   const isActive = (href: string) => {
-    if (href === '/dashboard') return pathname === '/dashboard';
+    if (href === '/') return pathname === '/' || pathname === '/dashboard';
     return pathname?.startsWith(href) ?? false;
   };
 

@@ -75,7 +75,7 @@ export default function LoginPage() {
       await new Promise((r) => setTimeout(r, 1000));
       setOtpLoading(false);
       if (code === CORRECT_OTP) {
-        router.push('/dashboard');
+        router.push('/');
       } else {
         setOtpError('Invalid code. Please try again.');
         setOtpValues(['', '', '', '', '', '']);

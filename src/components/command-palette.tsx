@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/command';
 
 const PAGES = [
-  { label: 'Overview', href: '/dashboard', icon: Home },
+  { label: 'Overview', href: '/', icon: Home },
   { label: 'Content', href: '/dashboard/content', icon: FileText },
   { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
   { label: 'Settings — Apps', href: '/dashboard/settings', icon: Settings },
