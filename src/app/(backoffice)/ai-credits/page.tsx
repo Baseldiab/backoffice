@@ -12,7 +12,7 @@ export default function AICreditsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 ">
         <StatCard title="Total Credits Issued" value="—" icon={Zap} />
         <StatCard title="Credits Used (MTD)" value="—" icon={Zap} />
         <StatCard title="Credits Remaining" value="—" icon={Zap} />
